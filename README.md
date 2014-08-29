@@ -3,6 +3,9 @@
 This project provides an SBT 0.13+ plugin for compiling and packaging
 a single file.
 
+The implementation was based on a previous, non-functional
+implementation found [here](https://github.com/sbt/sbt/issues/240).
+
 ## Setup
 
 Add the following lines to `project/plugins.sbt`
