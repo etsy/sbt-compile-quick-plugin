@@ -64,6 +64,8 @@ object CompileQuick extends Plugin{
 
     Def.inputTask {
       val input = parser.parsed
+      // The tab completion uses full paths.  However, it still
+      // supports paths relative to scalaSource
       val fileToCompile = input.charAt(0) match {
         case '/' => file(input)
         case _ => file((scalaSource in conf).value.getAbsolutePath + "/" + input)
