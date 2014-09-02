@@ -4,7 +4,7 @@ name := "sbt-compile-quick-plugin"
 
 organization := "com.etsy"
 
-version := "0.3.0-SNAPSHOT"
+version := "0.3.2-SNAPSHOT"
 
 publishTo <<= version { (v: String) =>
   val archivaURL = "http://ivy.etsycorp.com/repository"

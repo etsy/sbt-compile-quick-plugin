@@ -28,11 +28,11 @@ object CompileQuick extends Plugin{
   /**
     * Packages a JAR without compiling anything
     */
-  def packageQuickTask: Initialize[Task[File]] = Def.task {
+  def packageQuickTask(files: TaskKey[Seq[(File, String)]]): Initialize[Task[File]] = Def.task {
     val output = packageQuickOutput.value
     IO.delete(output)
     val s = streams.value
-    val packageConf = new Package.Configuration(filesToPackage.value, output, Seq())
+    val packageConf = new Package.Configuration(files.value, output, Seq())
     Package(packageConf, s.cacheDirectory, s.log)
     output
   }
@@ -116,22 +116,16 @@ object CompileQuick extends Plugin{
     ((scalaSource in conf) ** GlobFilter("*.scala")).value.get
   }
 
-  /**
-    * Produces a list of files to package for packageQuick
-    * @param conf The configuration (Compile or Test) in which context to execute the filesToPackage task
-    */
-  def filesToPackageTask(conf: Configuration): Initialize[Task[Seq[(File, String)]]] = Def.task {
-    val baseDir = (classDirectory in conf).value.getAbsolutePath + "/"
-    ((classDirectory in conf) ** GlobFilter("*.class")).value.get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
-  }
-
   val compileQuickSettings: Seq[Def.Setting[_]] = Seq(
     compileQuick in Compile <<= compileQuickTask(Compile),
     compileQuick in Test <<= compileQuickTask(Test),
     scalaSources in Compile <<= scalaSourcesTask(Compile) storeAs (scalaSources in Compile) triggeredBy (sources in Compile),
     scalaSources in Test <<= scalaSourcesTask(Test) storeAs (scalaSources in Test) triggeredBy (sources in Test),
-    filesToPackage <<= filesToPackageTask(Compile),
-    packageQuick <<= packageQuickTask,
+    filesToPackage <<= (classDirectory in Compile).map { (classDir) =>
+      val baseDir = classDir.getAbsolutePath + "/"
+        (classDir ** GlobFilter("*.class")).get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
+    },
+    packageQuick <<= packageQuickTask(filesToPackage),
     packageQuickOutput <<= artifactPath in Compile in packageBin
   )
 }
