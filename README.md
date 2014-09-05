@@ -12,8 +12,6 @@ Add the following lines to `project/plugins.sbt`
 
 ```scala
 addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.4.0")
-
-resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"	
 ```
 
 Then add the following line to `build.sbt`:
