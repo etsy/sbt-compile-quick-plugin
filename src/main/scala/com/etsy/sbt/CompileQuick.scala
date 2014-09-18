@@ -1,13 +1,11 @@
 package com.etsy.sbt
 
-import sbt._
-import Keys._
-import sbt.Defaults._
-import Def.{Initialize}
-import sbt.complete._
 import sbinary.DefaultProtocol._
-import Cache.seqFormat
-import Compiler._
+import sbt.Cache.seqFormat
+import sbt.Def.Initialize
+import sbt.Keys._
+import sbt._
+import sbt.complete._
 
 /**
   * An SBT plugin that allows compiling and packaging a single class
@@ -15,7 +13,7 @@ import Compiler._
   * @author Andrew Johnson <ajohnson@etsy.com>
   */
 object CompileQuick extends Plugin{
-  import CompileQuickTasks._
+  import com.etsy.sbt.CompileQuick.CompileQuickTasks._
 
   object CompileQuickTasks {
     val compileQuick = InputKey[Unit]("compile-quick", "Compiles a single file")
@@ -42,7 +40,7 @@ object CompileQuick extends Plugin{
     * Supports tab-completing the file name
     */
   def runParser: (State, Seq[File]) => Parser[String] = {
-    import DefaultParsers._
+    import sbt.complete.DefaultParsers._
       (state, jobs) => {
       Space ~> token(NotSpace examples jobs.map(_.toString).toSet)
     }
@@ -113,7 +111,7 @@ object CompileQuick extends Plugin{
     * @param conf The configuration (Compile or Test) in which context to execute the scalaSources task
     */
   def scalaSourcesTask(conf: Configuration): Initialize[Task[Seq[File]]] = Def.task {
-    ((scalaSource in conf) ** GlobFilter("*.scala")).value.get
+    ((scalaSource in conf).value ** "*.scala").get
   }
 
   val compileQuickSettings: Seq[Def.Setting[_]] = Seq(
