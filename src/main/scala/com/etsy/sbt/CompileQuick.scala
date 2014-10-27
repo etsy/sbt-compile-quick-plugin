@@ -103,6 +103,10 @@ object CompileQuick extends Plugin{
     def endSource(sourcePath: File) {}
 
     def problem(what: String, pos: Position, msg: String, severity: Severity, reported: Boolean) {}
+
+    def nameHashing(): Boolean = true
+
+    def usedName(sourceFile: File, names: String) {}
   }
 
   /**
