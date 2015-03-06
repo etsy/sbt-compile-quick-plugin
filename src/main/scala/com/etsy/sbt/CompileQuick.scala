@@ -72,6 +72,7 @@ object CompileQuick extends Plugin{
         val compilers = Keys.compilers.value
         val log = streams.value.log
         IO.createDirectory(outputDir.value)
+        log.info(s"Compiling $fileToCompile")
 
         compilers.scalac(Seq(fileToCompile), noChanges, classpath.value.map(_.data), outputDir.value, options.value, noopCallback, 1000, inputs.value.incSetup.cache, log)
       }
