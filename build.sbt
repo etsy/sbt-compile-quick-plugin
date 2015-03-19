@@ -6,7 +6,7 @@ name := "sbt-compile-quick-plugin"
 
 organization := "com.etsy"
 
-version := "0.5.2-SNAPSHOT"
+version := "0.5.3-SNAPSHOT"
 
 xerial.sbt.Sonatype.sonatypeSettings
 

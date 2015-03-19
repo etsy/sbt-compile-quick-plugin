@@ -58,7 +58,7 @@ object CompileQuick extends Plugin{
     val inputs = compileInputs in (conf, compile)
     val classpath = dependencyClasspath in conf
     val outputDir = classDirectory in conf
-    val options = scalacOptions in compileQuick
+    val options = scalacOptions in (conf, compileQuick)
 
     Def.inputTask {
       val input = parser.parsed

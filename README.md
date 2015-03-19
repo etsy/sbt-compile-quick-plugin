@@ -11,7 +11,7 @@ The implementation was based on an older implementation found
 Add the following lines to `project/plugins.sbt`
 
 ```scala
-addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.5.0")
+addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.5.3")
 ```
 
 Then add the following line to `build.sbt`:
