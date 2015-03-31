@@ -1,4 +1,4 @@
-# sbt-compile-quick-plugin
+# sbt-compile-quick-plugin [![Build Status](https://travis-ci.org/etsy/sbt-compile-quick-plugin.svg)](https://travis-ci.org/etsy/sbt-compile-quick-plugin)
 
 This project provides an SBT 0.13.6+ plugin for compiling and packaging
 a single file.
