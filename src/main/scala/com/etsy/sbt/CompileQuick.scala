@@ -108,6 +108,10 @@ object CompileQuick extends Plugin{
     def nameHashing(): Boolean = true
 
     def usedName(sourceFile: File, names: String) {}
+
+    override def binaryDependency(file: File, s: String, file1: File, dependencyContext: DependencyContext): Unit = {}
+
+    override def sourceDependency(file: File, file1: File, dependencyContext: DependencyContext): Unit = {}
   }
 
   /**

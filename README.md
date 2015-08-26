@@ -1,6 +1,6 @@
 # sbt-compile-quick-plugin [![Build Status](https://travis-ci.org/etsy/sbt-compile-quick-plugin.svg)](https://travis-ci.org/etsy/sbt-compile-quick-plugin)
 
-This project provides an SBT 0.13.6+ plugin for compiling and packaging
+This project provides an SBT 0.13.9+ plugin for compiling and packaging
 a single file.
 
 The implementation was based on an older implementation found
@@ -11,7 +11,7 @@ The implementation was based on an older implementation found
 Add the following lines to `project/plugins.sbt`
 
 ```scala
-addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.5.3")
+addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.5.4")
 ```
 
 Then add the following line to `build.sbt`:
