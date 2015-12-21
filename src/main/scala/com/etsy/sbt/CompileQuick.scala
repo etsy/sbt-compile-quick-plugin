@@ -12,8 +12,10 @@ import sbt.complete._
   *
   * @author Andrew Johnson <ajohnson@etsy.com>
   */
-object CompileQuick extends Plugin{
+object CompileQuick extends AutoPlugin {
   import com.etsy.sbt.CompileQuick.CompileQuickTasks._
+
+  override def trigger: PluginTrigger = allRequirements
 
   object CompileQuickTasks {
     val compileQuick = InputKey[Unit]("compile-quick", "Compiles a single file")
@@ -123,7 +125,8 @@ object CompileQuick extends Plugin{
     ((scalaSource in conf).value ** "*.scala").get
   }
 
-  val compileQuickSettings: Seq[Def.Setting[_]] = Seq(
+
+  override def projectSettings: Seq[Def.Setting[_]] = Seq(
     compileQuick in Compile <<= compileQuickTask(Compile),
     compileQuick in Test <<= compileQuickTask(Test),
     scalaSources in Compile <<= scalaSourcesTask(Compile) storeAs (scalaSources in Compile) triggeredBy (sources in Compile),

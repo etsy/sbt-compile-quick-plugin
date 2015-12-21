@@ -6,12 +6,11 @@ name := "sbt-compile-quick-plugin"
 
 organization := "com.etsy"
 
-version := "0.5.4-SNAPSHOT"
+version := "1.0.1-SNAPSHOT"
 
 xerial.sbt.Sonatype.sonatypeSettings
 
-pomExtra := (
-  <url>https://github.com/etsy/sbt-checkstyle-plugin</url>
+pomExtra := <url>https://github.com/etsy/sbt-checkstyle-plugin</url>
   <licenses>
     <license>
       <name>MIT License</name>
@@ -30,4 +29,3 @@ pomExtra := (
       <url>github.com/ajsquared</url>
     </developer>
   </developers>
-)

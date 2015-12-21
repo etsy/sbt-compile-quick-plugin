@@ -11,14 +11,10 @@ The implementation was based on an older implementation found
 Add the following lines to `project/plugins.sbt`
 
 ```scala
-addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "0.5.4")
+addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "1.0.0")
 ```
 
-Then add the following line to `build.sbt`:
-
-```scala
-com.etsy.sbt.CompileQuick.compileQuickSettings
-```
+sbt-compile-quick-plugin is an AutoPlugin, so there is no need to modify the `build.sbt` file to enable it.
 
 ## Usage
 
