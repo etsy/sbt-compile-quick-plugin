@@ -29,3 +29,7 @@ pomExtra := <url>https://github.com/etsy/sbt-checkstyle-plugin</url>
       <url>github.com/ajsquared</url>
     </developer>
   </developers>
+
+scalastyleConfig := file("scalastyle.xml")
+
+scalastyleFailOnError := true

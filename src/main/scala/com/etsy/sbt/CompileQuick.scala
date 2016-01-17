@@ -5,7 +5,9 @@ import sbt.Cache.seqFormat
 import sbt.Def.Initialize
 import sbt.Keys._
 import sbt._
+import sbt.complete.DefaultParsers._
 import sbt.complete._
+import xsbti.{DependencyContext, Severity, Position}
 
 /**
   * An SBT plugin that allows compiling and packaging a single class
@@ -13,17 +15,13 @@ import sbt.complete._
   * @author Andrew Johnson <ajohnson@etsy.com>
   */
 object CompileQuick extends AutoPlugin {
-  import com.etsy.sbt.CompileQuick.CompileQuickTasks._
-
   override def trigger: PluginTrigger = allRequirements
 
-  object CompileQuickTasks {
-    val compileQuick = InputKey[Unit]("compile-quick", "Compiles a single file")
-    val scalaSources = TaskKey[Seq[File]]("scala-sources", "List of all Scala source files")
-    val packageQuick = TaskKey[File]("package-quick", "Packages a JAR without compiling anything")
-    val filesToPackage = TaskKey[Seq[(File, String)]]("files-to-package", "Produces a list of files to be included when running packageQuick")
-    val packageQuickOutput = SettingKey[File]("package-quick-output", "Location of the JAR produced by packageQuick")
-  }
+  val compileQuick = InputKey[Unit]("compile-quick", "Compiles a single file")
+  val scalaSources = TaskKey[Seq[File]]("scala-sources", "List of all Scala source files")
+  val packageQuick = TaskKey[File]("package-quick", "Packages a JAR without compiling anything")
+  val filesToPackage = TaskKey[Seq[(File, String)]]("files-to-package", "Produces a list of files to be included when running packageQuick")
+  val packageQuickOutput = SettingKey[File]("package-quick-output", "Location of the JAR produced by packageQuick")
 
   /**
     * Packages a JAR without compiling anything
@@ -42,15 +40,14 @@ object CompileQuick extends AutoPlugin {
     * Supports tab-completing the file name
     */
   def runParser: (State, Seq[File]) => Parser[String] = {
-    import sbt.complete.DefaultParsers._
-      (state, jobs) => {
+    (state, jobs) => {
       Space ~> token(NotSpace examples jobs.map(_.toString).toSet)
     }
   }
 
   /**
     * Compiles a single file
-    * 
+    *
     * @param conf The configuration (Compile or Test) in which context to execute the compileQuick command
     */
   def compileQuickTask(conf: Configuration) : Initialize[InputTask[Unit]] = {
@@ -61,6 +58,7 @@ object CompileQuick extends AutoPlugin {
     val classpath = dependencyClasspath in conf
     val outputDir = classDirectory in conf
     val options = scalacOptions in (conf, compileQuick)
+    val maxErrors = 1000
 
     Def.inputTask {
       val input = parser.parsed
@@ -76,7 +74,7 @@ object CompileQuick extends AutoPlugin {
         IO.createDirectory(outputDir.value)
         log.info(s"Compiling $fileToCompile")
 
-        compilers.scalac(Seq(fileToCompile), noChanges, classpath.value.map(_.data), outputDir.value, options.value, noopCallback, 1000, inputs.value.incSetup.cache, log)
+        compilers.scalac(Seq(fileToCompile), noChanges, classpath.value.map(_.data), outputDir.value, options.value, noopCallback, maxErrors, inputs.value.incSetup.cache, log)
       }
     }
   }
@@ -91,7 +89,6 @@ object CompileQuick extends AutoPlugin {
 
   // This discards the analysis produced by compiling one file, as it
   // isn't that useful
-  import xsbti._
   object noopCallback extends xsbti.AnalysisCallback {
     def beginSource(source: File) {}
 
@@ -133,7 +130,7 @@ object CompileQuick extends AutoPlugin {
     scalaSources in Test <<= scalaSourcesTask(Test) storeAs (scalaSources in Test) triggeredBy (sources in Test),
     filesToPackage <<= (classDirectory in Compile).map { (classDir) =>
       val baseDir = classDir.getAbsolutePath + "/"
-        (classDir ** GlobFilter("*.class")).get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
+      (classDir ** GlobFilter("*.class")).get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
     },
     packageQuick <<= packageQuickTask(filesToPackage),
     packageQuickOutput <<= artifactPath in Compile in packageBin
