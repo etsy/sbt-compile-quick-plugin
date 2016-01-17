@@ -11,7 +11,7 @@ The implementation was based on an older implementation found
 Add the following lines to `project/plugins.sbt`
 
 ```scala
-addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "1.0.0")
+addSbtPlugin("com.etsy" % "sbt-compile-quick-plugin" % "1.1.0")
 ```
 
 sbt-compile-quick-plugin is an AutoPlugin, so there is no need to modify the `build.sbt` file to enable it.
