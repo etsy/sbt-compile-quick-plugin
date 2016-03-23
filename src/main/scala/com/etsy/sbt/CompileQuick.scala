@@ -64,10 +64,12 @@ object CompileQuick extends AutoPlugin {
       val input = parser.parsed
       // The tab completion uses full paths.  However, it still
       // supports paths relative to scalaSource
-      val fileToCompile = input.charAt(0) match {
-        case '/' => file(input)
-        case _ => file((scalaSource in conf).value.getAbsolutePath + "/" + input)
+      val baseScalaSourcePath = (scalaSource in conf).value.getAbsolutePath
+      val fileToCompile = file(input).isAbsolute match {
+        case true => file(input)
+        case false => file(s"$baseScalaSourcePath/$input")
       }
+
       if (fileToCompile.exists) {
         val compilers = Keys.compilers.value
         val log = streams.value.log
