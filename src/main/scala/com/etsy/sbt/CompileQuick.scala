@@ -18,7 +18,7 @@ object CompileQuick extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
 
   val compileQuick = InputKey[Unit]("compile-quick", "Compiles a single file")
-  val scalaSources = TaskKey[Seq[File]]("scala-sources", "List of all Scala source files")
+  val scalaSources = TaskKey[Seq[String]]("scala-sources", "List of all Scala source files")
   val packageQuick = TaskKey[File]("package-quick", "Packages a JAR without compiling anything")
   val filesToPackage = TaskKey[Seq[(File, String)]]("files-to-package", "Produces a list of files to be included when running packageQuick")
   val packageQuickOutput = SettingKey[File]("package-quick-output", "Location of the JAR produced by packageQuick")
@@ -39,7 +39,7 @@ object CompileQuick extends AutoPlugin {
     * Parser for compileQuick
     * Supports tab-completing the file name
     */
-  def runParser: (State, Seq[File]) => Parser[String] = {
+  def runParser: (State, Seq[String]) => Parser[String] = {
     (state, jobs) => {
       Space ~> token(NotSpace examples jobs.map(_.toString).toSet)
     }
@@ -117,11 +117,17 @@ object CompileQuick extends AutoPlugin {
 
   /**
     * Produces a list of Scala files used for tab-completion in compileQuick
+    * It includes both absolute paths and paths relative to scalaSource
     *
     * @param conf The configuration (Compile or Test) in which context to execute the scalaSources task
     */
-  def scalaSourcesTask(conf: Configuration): Initialize[Task[Seq[File]]] = Def.task {
-    ((scalaSource in conf).value ** "*.scala").get
+  def scalaSourcesTask(conf: Configuration): Initialize[Task[Seq[String]]] = Def.task {
+    val scalaSourceFiles = ((scalaSource in conf).value ** "*.scala").get
+    val baseScalaSourcePath = (scalaSource in conf).value.getAbsolutePath
+
+    scalaSourceFiles flatMap { file: File =>
+      Seq(file.getAbsolutePath, file.getAbsolutePath.replace(baseScalaSourcePath + "/", ""))
+    }
   }
 
 
