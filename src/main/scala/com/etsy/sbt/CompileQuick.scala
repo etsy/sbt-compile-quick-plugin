@@ -108,6 +108,8 @@ object CompileQuick extends AutoPlugin {
 
     def nameHashing(): Boolean = true
 
+    override def includeSynthToNameHashing(): Boolean = true
+
     def usedName(sourceFile: File, names: String) {}
 
     override def binaryDependency(file: File, s: String, file1: File, dependencyContext: DependencyContext): Unit = {}
