@@ -132,15 +132,16 @@ object CompileQuick extends AutoPlugin {
 
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    compileQuick in Compile <<= compileQuickTask(Compile),
-    compileQuick in Test <<= compileQuickTask(Test),
-    scalaSources in Compile <<= scalaSourcesTask(Compile) storeAs (scalaSources in Compile) triggeredBy (sources in Compile),
-    scalaSources in Test <<= scalaSourcesTask(Test) storeAs (scalaSources in Test) triggeredBy (sources in Test),
-    filesToPackage <<= (classDirectory in Compile).map { (classDir) =>
+    compileQuick in Compile := compileQuickTask(Compile).evaluated,
+    compileQuick in Test := compileQuickTask(Test).evaluated,
+    scalaSources in Compile := (scalaSourcesTask(Compile) storeAs (scalaSources in Compile) triggeredBy (sources in Compile)).value,
+    scalaSources in Test := (scalaSourcesTask(Test) storeAs (scalaSources in Test) triggeredBy (sources in Test)).value,
+    filesToPackage := {
+      val classDir = (classDirectory in Compile).value
       val baseDir = classDir.getAbsolutePath + "/"
       (classDir ** GlobFilter("*.class")).get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
     },
-    packageQuick <<= packageQuickTask(filesToPackage),
-    packageQuickOutput <<= artifactPath in Compile in packageBin
+    packageQuick := packageQuickTask(filesToPackage).value,
+    packageQuickOutput := (artifactPath in Compile in packageBin).value
   )
 }
