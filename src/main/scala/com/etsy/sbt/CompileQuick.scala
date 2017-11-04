@@ -1,13 +1,15 @@
 package com.etsy.sbt
 
-import sbinary.DefaultProtocol._
-import sbt.Cache.seqFormat
+import java.util
+
+import sjsonnew.BasicJsonProtocol._
 import sbt.Def.Initialize
 import sbt.Keys._
 import sbt._
 import sbt.complete.DefaultParsers._
 import sbt.complete._
-import xsbti.{DependencyContext, Severity, Position}
+import xsbti.api.{ClassLike, DependencyContext}
+import xsbti.{Position, Severity, UseScope}
 
 /**
   * An SBT plugin that allows compiling and packaging a single class
@@ -31,7 +33,7 @@ object CompileQuick extends AutoPlugin {
     IO.delete(output)
     val s = streams.value
     val packageConf = new Package.Configuration(files.value, output, Seq())
-    Package(packageConf, s.cacheDirectory, s.log)
+    Package(packageConf, s.cacheStoreFactory, s.log)
     output
   }
 
@@ -61,22 +63,46 @@ object CompileQuick extends AutoPlugin {
     val maxErrors = 1000
 
     Def.inputTask {
-      val input = parser.parsed
+      val input: String = parser.parsed
       // The tab completion uses full paths.  However, it still
       // supports paths relative to scalaSource
-      val baseScalaSourcePath = (scalaSource in conf).value.getAbsolutePath
-      val fileToCompile = file(input).isAbsolute match {
-        case true => file(input)
-        case false => file(s"$baseScalaSourcePath/$input")
+      val baseScalaSourcePath: File = (scalaSource in conf).value
+      val baseSrcManagedPath: File = (sourceManaged in conf).value
+
+      val fileToCompile: File = if(file(input).isAbsolute) {
+        file(input)
+      } else if((baseScalaSourcePath / input).exists()) {
+        baseScalaSourcePath / input
+      } else {
+        baseSrcManagedPath / input
       }
 
       if (fileToCompile.exists) {
         val compilers = Keys.compilers.value
-        val log = streams.value.log
+        val s = streams.value
+        val log = s.log
         IO.createDirectory(outputDir.value)
+
+        val filesToCompile = Array(fileToCompile)
+
         log.info(s"Compiling $fileToCompile")
 
-        compilers.scalac(Seq(fileToCompile), noChanges, classpath.value.map(_.data), outputDir.value, options.value, noopCallback, maxErrors, inputs.value.incSetup.cache, log)
+        compilers.scalac() match {
+          case c: sbt.internal.inc.AnalyzingCompiler =>
+            c.apply(
+              filesToCompile,
+              noChanges,
+              classpath.value.map(_.data).toArray,
+              outputDir.value,
+              options.value.toArray,
+              noopCallback,
+              maxErrors,
+              inputs.value.setup().cache(),
+              log
+            )
+          case unknown_compiler =>
+            log.error("wrong compiler, expected 'sbt.internal.inc.AnalyzingCompiler' got: " + unknown_compiler.getClass.getName)
+        }
       }
     }
   }
@@ -92,29 +118,29 @@ object CompileQuick extends AutoPlugin {
   // This discards the analysis produced by compiling one file, as it
   // isn't that useful
   object noopCallback extends xsbti.AnalysisCallback {
-    def beginSource(source: File) {}
+    override def startSource(source: File): Unit = {}
 
-    def generatedClass(source: File, module: File, name: String) {}
+    override def mainClass(sourceFile: File, className: String): Unit = {}
 
-    def api(sourceFile: File, source: xsbti.api.SourceAPI) {}
+    override def apiPhaseCompleted(): Unit = {}
 
-    def sourceDependency(dependsOn: File, source: File, publicInherited: Boolean) {}
+    override def enabled(): Boolean = false
 
-    def binaryDependency(binary: File, name: String, source: File, publicInherited: Boolean) {}
+    override def binaryDependency(onBinaryEntry: File, onBinaryClassName: String, fromClassName: String, fromSourceFile: File, context: DependencyContext): Unit = {}
 
-    def endSource(sourcePath: File) {}
+    override def generatedNonLocalClass(source: File, classFile: File, binaryClassName: String, srcClassName: String): Unit = {}
 
-    def problem(what: String, pos: Position, msg: String, severity: Severity, reported: Boolean) {}
+    override def problem(what: String, pos: Position, msg: String, severity: Severity, reported: Boolean): Unit = {}
 
-    def nameHashing(): Boolean = true
+    override def dependencyPhaseCompleted(): Unit = {}
 
-    override def includeSynthToNameHashing(): Boolean = true
+    override def classDependency(onClassName: String, sourceClassName: String, context: DependencyContext): Unit = {}
 
-    def usedName(sourceFile: File, names: String) {}
+    override def generatedLocalClass(source: File, classFile: File): Unit = {}
 
-    override def binaryDependency(file: File, s: String, file1: File, dependencyContext: DependencyContext): Unit = {}
+    override def api(sourceFile: File, classApi: ClassLike): Unit = {}
 
-    override def sourceDependency(file: File, file1: File, dependencyContext: DependencyContext): Unit = {}
+    override def usedName(className: String, name: String, useScopes: util.EnumSet[UseScope]): Unit = {}
   }
 
   /**
@@ -124,14 +150,21 @@ object CompileQuick extends AutoPlugin {
     * @param conf The configuration (Compile or Test) in which context to execute the scalaSources task
     */
   def scalaSourcesTask(conf: Configuration): Initialize[Task[Seq[String]]] = Def.task {
-    val scalaSourceFiles = ((scalaSource in conf).value ** "*.scala").get
-    val baseScalaSourcePath = (scalaSource in conf).value.getAbsolutePath
+    val scalaSourceFiles: Seq[File] = ((scalaSource in conf).value ** "*.scala").get
+    val baseScalaSourcePath: String = (scalaSource in conf).value.getAbsolutePath
+    val scalaSourceManagedFiles: Seq[File] = ((sourceManaged in conf).value ** "*.scala").get
+    val baseScalaSourceManagedPath: String = (sourceManaged in conf).value.getAbsolutePath
 
-    scalaSourceFiles flatMap { file: File =>
+    val srcManagedFiles: Seq[String] = scalaSourceManagedFiles.flatMap { file: File =>
+      Seq(file.getAbsolutePath, file.getAbsolutePath.replace(baseScalaSourceManagedPath + "/", ""))
+    }
+
+    val srcFiles: Seq[String] = scalaSourceFiles.flatMap { file: File =>
       Seq(file.getAbsolutePath, file.getAbsolutePath.replace(baseScalaSourcePath + "/", ""))
     }
-  }
 
+    srcFiles ++ srcManagedFiles
+  }
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
     compileQuick in Compile := compileQuickTask(Compile).evaluated,
