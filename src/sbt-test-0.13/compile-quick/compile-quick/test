@@ -1,0 +1,9 @@
+# Runs compileQuick
+> compileQuick com/etsy/sbt/Main.scala
+$ exists target/scala-2.10/classes/com/etsy/sbt/Main.class
+# Runs compileQuick on a test
+> test:compileQuick com/etsy/sbt/Test.scala
+$ exists target/scala-2.10/test-classes/com/etsy/sbt/Test.class
+# Runs packageQuick
+> packageQuick
+$ exists target/scala-2.10/compile-quick-test_2.10-0.1.jar

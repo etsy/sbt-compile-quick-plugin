@@ -1,17 +1,12 @@
 package com.etsy.sbt
 
-import java.util
-
-import sjsonnew.BasicJsonProtocol._
+import com.etsy.sbt.Compatibility.Implicits._
 import sbt.Def.Initialize
 import sbt.Keys._
-import sbt._
 import sbt.complete.DefaultParsers._
 import sbt.complete._
-import sbt.util.CacheStoreFactory
-import xsbti.api.{ClassLike, DependencyContext}
-import xsbti.compile.Inputs
-import xsbti.{Position, Severity, UseScope}
+import sbt.{Def, _}
+import xsbti.compile.DependencyChanges
 
 /**
   * An SBT plugin that allows compiling and packaging a single class
@@ -43,17 +38,19 @@ object CompileQuick extends AutoPlugin {
       val baseDir = classDir.getAbsolutePath + "/"
       (classDir ** GlobFilter("*.class")).get.map(f => (f, f.getAbsolutePath.replace(baseDir, "")))
     },
-    packageQuick := packageQuickTask(filesToPackage.value, packageQuickOutput.value, streams.value.cacheStoreFactory, streams.value.log),
-    packageQuickOutput := (artifactPath in Compile in packageBin).value,
+    packageQuick := packageQuickTask.value,
+    packageQuickOutput := (artifactPath in Compile in packageBin).value
   )
 
   /**
     * Packages a JAR without compiling anything
     */
-  def packageQuickTask(files: Seq[(File, String)], output: File, cacheStoreFactory: CacheStoreFactory, log: Logger): File = {
+  def packageQuickTask: Def.Initialize[Task[File]] = Def.task {
+    val output = packageQuickOutput.value
     IO.delete(output)
+    val files = filesToPackage.value
     val packageConf = new Package.Configuration(files, output, Seq())
-    Package(packageConf, cacheStoreFactory, log)
+    Compatibility.createPackage(packageConf, streams.value)
     output
   }
 
@@ -62,7 +59,7 @@ object CompileQuick extends AutoPlugin {
     * Supports tab-completing the file name
     */
   val runParser: (State, Seq[String]) => Parser[String] = {
-    (state, jobs) => {
+    (_, jobs) => {
       Space ~> token(NotSpace examples jobs.map(_.toString).toSet)
     }
   }
@@ -77,22 +74,22 @@ object CompileQuick extends AutoPlugin {
       runParser(s, names.getOrElse(Nil))
     }
     Def.inputTask {
-      val inputs: Inputs = (compileInputs in(conf, compile)).value
-      val classpath: Classpath = (dependencyClasspath in conf).value
-      val outputDir: File = (classDirectory in conf).value
-      val options: Seq[String] = (scalacOptions in(conf, compileQuick)).value
+      val inputs = (compileInputs in(conf, compile)).value
+      val classpath = (dependencyClasspath in conf).value
+      val outputDir = (classDirectory in conf).value
+      val options = (scalacOptions in(conf, compileQuick)).value
       val maxErrors = 1000
 
-      val input: String = parser.parsed
+      val input = parser.parsed
       // The tab completion uses full paths.  However, it still
       // supports paths relative to scalaSource
-      val baseScalaSourcePath: File = (scalaSource in conf).value
-      val baseSrcManagedPath: File = (sourceManaged in conf).value
+      val baseScalaSourcePath = (scalaSource in conf).value
+      val baseSrcManagedPath = (sourceManaged in conf).value
 
       val compilers = Keys.compilers.value
       val s = streams.value
 
-      val fileToCompile: File = if (file(input).isAbsolute) {
+      val fileToCompile = if (file(input).isAbsolute) {
         file(input)
       } else if ((baseScalaSourcePath / input).exists()) {
         baseScalaSourcePath / input
@@ -103,67 +100,31 @@ object CompileQuick extends AutoPlugin {
       if (fileToCompile.exists) {
         val log = s.log
         IO.createDirectory(outputDir)
-
-        val filesToCompile = Array(fileToCompile)
-
         log.info(s"Compiling $fileToCompile")
-
-        compilers.scalac() match {
-          case c: sbt.internal.inc.AnalyzingCompiler =>
-            c.apply(
-              filesToCompile,
-              noChanges,
-              classpath.map(_.data).toArray,
-              outputDir,
-              options.toArray,
-              noopCallback,
-              maxErrors,
-              inputs.setup().cache(),
-              log
-            )
-          case unknown_compiler =>
-            log.error("wrong compiler, expected 'sbt.internal.inc.AnalyzingCompiler' got: " + unknown_compiler.getClass.getName)
-        }
+        Compatibility.scalac(
+          compilers,
+          Seq(fileToCompile),
+          noChanges,
+          classpath.map(_.data),
+          outputDir,
+          options,
+          Compatibility.noopCallback,
+          maxErrors,
+          inputs,
+          log
+        )
       }
     }
   }
 
   // Indicates to the compiler that no files or dependencies have changed
   // This prevents compiling anything other than the requested file
-  val noChanges = new xsbti.compile.DependencyChanges {
+  val noChanges: DependencyChanges = new xsbti.compile.DependencyChanges {
     def isEmpty = true
 
     def modifiedBinaries = Array()
 
     def modifiedClasses = Array()
-  }
-
-  // This discards the analysis produced by compiling one file, as it
-  // isn't that useful
-  object noopCallback extends xsbti.AnalysisCallback {
-    override def startSource(source: File): Unit = {}
-
-    override def mainClass(sourceFile: File, className: String): Unit = {}
-
-    override def apiPhaseCompleted(): Unit = {}
-
-    override def enabled(): Boolean = false
-
-    override def binaryDependency(onBinaryEntry: File, onBinaryClassName: String, fromClassName: String, fromSourceFile: File, context: DependencyContext): Unit = {}
-
-    override def generatedNonLocalClass(source: File, classFile: File, binaryClassName: String, srcClassName: String): Unit = {}
-
-    override def problem(what: String, pos: Position, msg: String, severity: Severity, reported: Boolean): Unit = {}
-
-    override def dependencyPhaseCompleted(): Unit = {}
-
-    override def classDependency(onClassName: String, sourceClassName: String, context: DependencyContext): Unit = {}
-
-    override def generatedLocalClass(source: File, classFile: File): Unit = {}
-
-    override def api(sourceFile: File, classApi: ClassLike): Unit = {}
-
-    override def usedName(className: String, name: String, useScopes: util.EnumSet[UseScope]): Unit = {}
   }
 
   /**
