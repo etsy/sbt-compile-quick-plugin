@@ -15,7 +15,12 @@ scalaVersion := {
   }
 }
 
-libraryDependencies += "com.eed3si9n" %% "sjson-new-core" % "0.8.2"
+libraryDependencies ++= {
+  (sbtBinaryVersion in pluginCrossBuild).value match {
+    case "0.13" => Seq.empty
+    case _      => Seq("com.eed3si9n" %% "sjson-new-core" % "0.8.2")
+  }
+}
 
 xerial.sbt.Sonatype.sonatypeSettings
 
