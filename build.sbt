@@ -1,12 +1,26 @@
-import SonatypeKeys._
-
 sbtPlugin := true
 
 name := "sbt-compile-quick-plugin"
 
 organization := "com.etsy"
 
-version := "1.3.1-SNAPSHOT"
+version := "1.4.0-SNAPSHOT"
+
+crossSbtVersions := Seq("0.13.17", "1.1.6")
+
+scalaVersion := {
+  (sbtBinaryVersion in pluginCrossBuild).value match {
+    case "0.13" => "2.10.7"
+    case _      => "2.12.6"
+  }
+}
+
+libraryDependencies ++= {
+  (sbtBinaryVersion in pluginCrossBuild).value match {
+    case "0.13" => Seq.empty
+    case _      => Seq("com.eed3si9n" %% "sjson-new-core" % "0.8.2")
+  }
+}
 
 xerial.sbt.Sonatype.sonatypeSettings
 
