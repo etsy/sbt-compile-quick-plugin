@@ -14,3 +14,4 @@ Every pull request will be built with [Travis CI](https://travis-ci.org/etsy/sbt
 # Contributors
 - Andrew Johnson [ajsquared](https://github.com/ajsquared)
 - kenji yoshida [xuwei-k](https://github.com/xuwei-k)
+- Jason Pickens [steinybot](https://github.com/steinybot)
