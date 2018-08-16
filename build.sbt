@@ -4,7 +4,7 @@ name := "sbt-compile-quick-plugin"
 
 organization := "com.etsy"
 
-version := "1.4.0"
+version := "1.5.0-SNAPSHOT"
 
 crossSbtVersions := Seq("0.13.17", "1.1.6")
 
