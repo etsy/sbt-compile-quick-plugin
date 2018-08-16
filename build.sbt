@@ -23,6 +23,7 @@ libraryDependencies ++= {
 }
 
 xerial.sbt.Sonatype.sonatypeSettings
+publishTo := sonatypePublishTo.value
 
 pomExtra := <url>https://github.com/etsy/sbt-checkstyle-plugin</url>
   <licenses>
